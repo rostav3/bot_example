@@ -5,32 +5,16 @@ let board;
 let moves;
 
 socket.emit("connect-game", user);
-socket.on('turn-' + user, function (data) {
+socket.on('turn-' + user, function (board) {
     moves = [];
-    let cells = findImportantCells(data.board);
 
-    addSoliders(data, cells);
-    spread(data.board, cells);
+    spread(board);
     socket.emit("finish-turn", {"user":user, "moves":moves});
 });
 
-function addSoliders(data, cells){
 
-    let soldiers = data.soliders;
-    board = data.board;
-    let numSoldiers = Math.floor(soldiers/cells.length);
-    for (let i=0; i<cells.length; i++){
-
-        moves.push({"type":"set","num":numSoldiers,"x":cells[i].x,"y":cells[i].y});
-        cells[i].val++;
-        board[cells[i].x][cells[i].y]+= numSoldiers;
-        soldiers -= numSoldiers;
-    }
-    if (soldiers > 0){
-        moves.push({"type":"set","num":soldiers,"x":cells[0].x,"y":cells[0].y});
-    }
-}
-function spread(board, cells) {
+function spread(board) {
+    let cells = findImportantCells(board);
     for (let j = 0; j < cells.length; j++) {
         let directions = geDirections(board, cells[j].x, cells[j].y);
 
@@ -38,16 +22,29 @@ function spread(board, cells) {
         for (let i = 0; i < directions.length; i++) {
             let direction = directions[i];
             moves.push({
-                "type": "move",
                 "num": numSoldiersToMove,
-                "past_x": cells[j].x,
-                "past_y": cells[j].y,
-                "x": cells[j].x + direction[0],
-                "y": cells[j].y + direction[1]
+                "prev_x": cells[j].x,
+                "prev_y": cells[j].y,
+                "next_x": cells[j].x + direction[0],
+                "next_y": cells[j].y + direction[1]
             });
         }
     }
 }
+
+function findCells(board) {
+    let cells = [];
+
+    for (let i=0; i<board.length; i++){
+        for (let j=0; j<board.length; j++){
+            if ((board[i][j]>0)){
+                cells.push({"x":i,"y":j,"val":board[i][j]});
+            }
+        }
+    }
+    return cells;
+}
+
 
 function findImportantCells(board) {
     let cells = [];
